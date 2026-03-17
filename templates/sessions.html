@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sessions — Write or Die</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --bg:#0d0d0d; --surface:#161616; --border:#2a2a2a; --text:#e8e0d0; --muted:#4a4a4a; --ember:#ff6b2b; --danger:#cc2200; }
+  body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; min-height: 100vh; }
+  header { padding: 24px 48px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .logo { font-family: 'Special Elite', cursive; font-size: 1.2rem; color: var(--text); text-decoration: none; letter-spacing: 0.04em; }
+  .logo span { color: var(--ember); }
+  .write-btn { padding: 9px 20px; background: var(--ember); color: #0d0d0d; border: none; border-radius: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; font-weight: 500; cursor: pointer; text-decoration: none; letter-spacing: 0.06em; transition: background 0.2s; display: inline-block; }
+  .write-btn:hover { background: #ff8a50; }
+  .container { max-width: 800px; margin: 0 auto; padding: 60px 24px 80px; }
+  .page-label { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .page-title { font-family: 'Special Elite', cursive; font-size: clamp(2rem,5vw,3.5rem); letter-spacing: 0.02em; margin-bottom: 8px; }
+  .page-title span { color: var(--ember); }
+  .page-sub { font-size: 0.78rem; color: var(--muted); margin-bottom: 48px; line-height: 1.6; }
+  .total-bar { margin-bottom: 24px; padding: 14px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; display: flex; flex-wrap: wrap; gap: 24px; font-size: 0.7rem; color: var(--muted); letter-spacing: 0.08em; }
+  .total-bar strong { color: var(--text); }
+  .sessions-list { display: flex; flex-direction: column; gap: 2px; }
+  .session-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 24px 28px; display: flex; align-items: flex-start; gap: 24px; transition: border-color 0.2s; }
+  .session-card:hover { border-color: var(--ember); }
+  .session-num { font-family: 'Special Elite', cursive; font-size: 1.8rem; color: var(--border); line-height: 1; min-width: 36px; padding-top: 2px; }
+  .session-body { flex: 1; min-width: 0; }
+  .session-preview { font-family: 'Special Elite', cursive; font-size: 1rem; line-height: 1.5; margin-bottom: 12px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; opacity: 0.85; }
+  .session-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.68rem; color: var(--muted); letter-spacing: 0.06em; }
+  .meta-val { color: var(--text); }
+  .session-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+  .btn-read { padding: 7px 14px; background: none; border: 1px solid var(--border); border-radius: 3px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; cursor: pointer; text-decoration: none; transition: all 0.18s; white-space: nowrap; display: inline-block; }
+  .btn-read:hover { border-color: var(--ember); color: var(--ember); }
+  .btn-del { padding: 7px 14px; background: none; border: 1px solid transparent; border-radius: 3px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; cursor: pointer; transition: all 0.18s; opacity: 0.4; }
+  .btn-del:hover { border-color: var(--danger); color: var(--danger); opacity: 1; }
+  .empty-state { text-align: center; padding: 80px 20px; }
+  .empty-icon { font-family: 'Special Elite', cursive; font-size: 4rem; color: var(--border); margin-bottom: 20px; }
+  .empty-title { font-family: 'Special Elite', cursive; font-size: 1.4rem; color: var(--muted); margin-bottom: 10px; }
+  .empty-sub { font-size: 0.78rem; color: var(--muted); opacity: 0.6; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/write" class="logo">Write <span>or</span> Die</a>
+  <a href="/write" class="write-btn">+ New session</a>
+</header>
+
+<div class="container">
+  <div class="page-label">// writing history</div>
+  <h1 class="page-title">Your <span>sessions</span></h1>
+  <p class="page-sub">Every piece of writing you survived to save.</p>
+
+  {% if sessions %}
+  <div class="total-bar">
+    <span>sessions <strong>{{ sessions|length }}</strong></span>
+    <span>total words <strong>{{ sessions|sum(attribute='word_count') }}</strong></span>
+    <span>total chars <strong>{{ sessions|sum(attribute='char_count') }}</strong></span>
+  </div>
+
+  <div class="sessions-list">
+    {% for s in sessions %}
+    <div class="session-card" id="session-{{ s.id }}">
+      <div class="session-num">{{ loop.index }}</div>
+      <div class="session-body">
+        <div class="session-preview">{{ s.content[:180] }}{% if s.content|length > 180 %}…{% endif %}</div>
+        <div class="session-meta">
+          <span>words <span class="meta-val">{{ s.word_count }}</span></span>
+          <span>chars <span class="meta-val">{{ s.char_count }}</span></span>
+          <span>time <span class="meta-val">{% set m = (s.duration_seconds // 60) %}{% set sec = (s.duration_seconds % 60) %}{{ m }}:{{ '%02d'|format(sec) }}</span></span>
+          <span>grace <span class="meta-val">{{ s.grace_period }}s</span></span>
+          <span>saved <span class="meta-val">{{ s.created_at[:16] }}</span></span>
+        </div>
+      </div>
+      <div class="session-actions">
+        <a href="/sessions/{{ s.id }}" class="btn-read">Read →</a>
+        <button class="btn-del" onclick="deleteSession({{ s.id }})">Delete</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">✍</div>
+    <div class="empty-title">No sessions yet.</div>
+    <p class="empty-sub">Finish a writing session and hit save to see it here.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+async function deleteSession(id) {
+  if (!confirm('Delete this session permanently?')) return;
+  const card = document.getElementById('session-' + id);
+  card.style.opacity = '0.3';
+  await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+  card.remove();
+}
+</script>
+</body>
+</html>

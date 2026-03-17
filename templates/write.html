@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Write or Die</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg:#0d0d0d; --text:#e8e0d0; --muted:#4a4a4a;
+    --ember:#ff6b2b; --safe:#3a8c5c; --danger:#cc2200;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; overflow: hidden; }
+
+  /* SPLASH */
+  #splash { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.8s ease; }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  .splash-title { font-family: 'Special Elite', cursive; font-size: clamp(2.5rem,6vw,5rem); letter-spacing: 0.04em; margin-bottom: 8px; text-align: center; }
+  .splash-title span { color: var(--ember); }
+  .splash-sub { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 60px; }
+  .config-box { background: #161616; border: 1px solid #2a2a2a; border-radius: 4px; padding: 36px 48px; width: min(460px,90vw); }
+  .config-label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .timer-options { display: flex; gap: 10px; margin-bottom: 28px; }
+  .timer-opt { flex: 1; padding: 12px; background: none; border: 1px solid #2a2a2a; border-radius: 3px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .timer-opt:hover { border-color: var(--ember); color: var(--text); }
+  .timer-opt.selected { border-color: var(--ember); color: var(--ember); background: rgba(255,107,43,0.08); }
+  .start-btn { width: 100%; padding: 16px; background: var(--ember); border: none; color: #0d0d0d; font-family: 'Special Elite', cursive; font-size: 1.1rem; letter-spacing: 0.08em; cursor: pointer; border-radius: 3px; transition: all 0.2s; }
+  .start-btn:hover { background: #ff8a50; transform: translateY(-1px); }
+  .warning-text { font-size: 0.7rem; color: #3a3a3a; text-align: center; margin-top: 20px; line-height: 1.6; letter-spacing: 0.05em; }
+  .sessions-link { display: block; text-align: center; margin-top: 16px; font-size: 0.72rem; color: var(--muted); text-decoration: none; letter-spacing: 0.08em; transition: color 0.2s; }
+  .sessions-link:hover { color: var(--ember); }
+
+  /* APP */
+  #app { display: none; flex-direction: column; height: 100vh; position: relative; }
+  #app.active { display: flex; }
+  #danger-vignette { position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: 0; transition: opacity 0.3s; }
+  .topbar { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; border-bottom: 1px solid #1a1a1a; position: relative; z-index: 10; }
+  .app-name { font-family: 'Special Elite', cursive; font-size: 0.95rem; color: var(--muted); letter-spacing: 0.06em; }
+  .timer-wrap { position: relative; width: 64px; height: 64px; }
+  #timerSvg { transform: rotate(-90deg); }
+  #timerTrack { fill: none; stroke: #1e1e1e; stroke-width: 4; }
+  #timerArc { fill: none; stroke: var(--safe); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.1s linear, stroke 0.3s; }
+  .timer-number { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 500; color: var(--safe); transition: color 0.3s; font-variant-numeric: tabular-nums; }
+  .stats { display: flex; gap: 24px; font-size: 0.7rem; color: var(--muted); letter-spacing: 0.08em; }
+  .stat span { color: var(--text); }
+  .editor-wrap { flex: 1; overflow-y: auto; padding: 60px clamp(20px,10vw,200px); }
+  #editor { width: 100%; min-height: 100%; background: none; border: none; outline: none; resize: none; color: var(--text); font-family: 'Special Elite', cursive; font-size: clamp(1.1rem,2vw,1.35rem); line-height: 1.9; letter-spacing: 0.02em; caret-color: var(--ember); }
+  #editor::placeholder { color: #2a2a2a; font-style: italic; }
+  #editor.deleted { animation: dissolve 1.2s ease forwards; }
+  @keyframes dissolve { 0%{opacity:1;filter:blur(0)} 50%{opacity:0.4;filter:blur(2px);color:#cc2200} 100%{opacity:0;filter:blur(8px)} }
+  #burn-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; pointer-events: none; opacity: 0; }
+  .burn-text { font-family: 'Special Elite', cursive; font-size: clamp(2rem,8vw,6rem); color: var(--danger); letter-spacing: 0.1em; text-shadow: 0 0 40px rgba(200,0,0,0.8); }
+  @keyframes burnIn { 0%{opacity:0;transform:scale(0.8)} 20%{opacity:1;transform:scale(1.05)} 80%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(1.1)} }
+  #progress-bar { position: fixed; bottom: 0; left: 0; height: 3px; background: var(--safe); transition: width 0.1s linear, background 0.3s; z-index: 20; }
+  @keyframes screen-flash { 0%{background:rgba(180,0,0,0)} 15%{background:rgba(180,0,0,0.35)} 100%{background:rgba(180,0,0,0)} }
+  #flash { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+
+  /* SAVE MODAL */
+  #saved-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 200; }
+  #saved-modal.open { display: flex; }
+  .modal-box { background: #161616; border: 1px solid #2a2a2a; border-radius: 4px; padding: 40px 48px; width: min(500px,90vw); text-align: center; }
+  .modal-box h2 { font-family: 'Special Elite', cursive; font-size: 1.8rem; color: var(--safe); margin-bottom: 12px; }
+  .modal-stats { font-size: 0.78rem; color: var(--muted); margin-bottom: 28px; line-height: 2; }
+  .modal-stats strong { color: var(--text); }
+  .modal-content { background: #0d0d0d; border: 1px solid #222; border-radius: 3px; padding: 20px; font-family: 'Special Elite', cursive; font-size: 0.85rem; color: var(--text); text-align: left; max-height: 200px; overflow-y: auto; margin-bottom: 24px; line-height: 1.7; white-space: pre-wrap; }
+  .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .modal-btn { flex: 1; padding: 12px; border-radius: 3px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; font-weight: 500; letter-spacing: 0.05em; border: none; transition: all 0.2s; min-width: 100px; }
+  .btn-copy { background: #222; color: var(--text); border: 1px solid #333; }
+  .btn-copy:hover { border-color: var(--muted); }
+  .btn-save { background: var(--safe); color: white; }
+  .btn-save:hover { background: #2d7a50; }
+  .btn-save:disabled { opacity: 0.5; cursor: default; }
+  .btn-new { background: var(--ember); color: #0d0d0d; }
+  .btn-new:hover { background: #ff8a50; }
+  .save-status { font-size: 0.72rem; color: var(--safe); margin-top: 14px; min-height: 18px; letter-spacing: 0.06em; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <h1 class="splash-title">Write <span>or</span> Die</h1>
+  <p class="splash-sub">Stop writing. Lose everything.</p>
+  <div class="config-box">
+    <p class="config-label">Grace period before deletion</p>
+    <div class="timer-options">
+      <button class="timer-opt" data-secs="3">3s<br><span style="font-size:0.65rem;color:#3a3a3a">brutal</span></button>
+      <button class="timer-opt selected" data-secs="5">5s<br><span style="font-size:0.65rem;color:#3a3a3a">default</span></button>
+      <button class="timer-opt" data-secs="10">10s<br><span style="font-size:0.65rem;color:#3a3a3a">forgiving</span></button>
+      <button class="timer-opt" data-secs="30">30s<br><span style="font-size:0.65rem;color:#3a3a3a">easy</span></button>
+    </div>
+    <button class="start-btn" id="startBtn">BEGIN WRITING</button>
+    <p class="warning-text">Once you start, you cannot stop.<br>Pause for longer than your grace period and everything is gone.</p>
+    <a href="/sessions" class="sessions-link">→ view past sessions</a>
+  </div>
+</div>
+
+<div id="app">
+  <div id="danger-vignette"></div>
+  <div id="flash"></div>
+  <div class="topbar">
+    <div class="app-name">Write or Die</div>
+    <div class="timer-wrap">
+      <svg id="timerSvg" width="64" height="64" viewBox="0 0 64 64">
+        <circle id="timerTrack" cx="32" cy="32" r="26"/>
+        <circle id="timerArc"   cx="32" cy="32" r="26"/>
+      </svg>
+      <div class="timer-number" id="timerNum">–</div>
+    </div>
+    <div class="stats">
+      <div class="stat">words <span id="wordCount">0</span></div>
+      <div class="stat">chars <span id="charCount">0</span></div>
+      <div class="stat">time <span id="sessionTime">0:00</span></div>
+    </div>
+  </div>
+  <div class="editor-wrap">
+    <textarea id="editor" placeholder="Start typing… don't you dare stop."></textarea>
+  </div>
+  <div id="progress-bar" style="width:100%"></div>
+</div>
+
+<div id="burn-overlay">
+  <div class="burn-text" id="burnText">GONE.</div>
+</div>
+
+<div id="saved-modal">
+  <div class="modal-box">
+    <h2>You survived.</h2>
+    <div class="modal-stats" id="modalStats"></div>
+    <div class="modal-content" id="modalContent"></div>
+    <div class="modal-actions">
+      <button class="modal-btn btn-copy" id="copyBtn">Copy text</button>
+      <button class="modal-btn btn-save" id="saveBtn">Save session</button>
+      <button class="modal-btn btn-new" id="newSessionBtn">Write again</button>
+    </div>
+    <div class="save-status" id="saveStatus"></div>
+  </div>
+</div>
+
+<script>
+  let GRACE = 5, timeLeft = GRACE, timerInterval = null, sessionInterval = null;
+  let sessionSeconds = 0, started = false, dying = false, savedText = '';
+  const CIRC = 2 * Math.PI * 26;
+
+  const splash      = document.getElementById('splash');
+  const app         = document.getElementById('app');
+  const editor      = document.getElementById('editor');
+  const timerArc    = document.getElementById('timerArc');
+  const timerNum    = document.getElementById('timerNum');
+  const wordCount   = document.getElementById('wordCount');
+  const charCount   = document.getElementById('charCount');
+  const sessionTime = document.getElementById('sessionTime');
+  const progressBar = document.getElementById('progress-bar');
+  const vignette    = document.getElementById('danger-vignette');
+  const burnOverlay = document.getElementById('burn-overlay');
+  const savedModal  = document.getElementById('saved-modal');
+
+  // Timer selector
+  document.querySelectorAll('.timer-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.timer-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      GRACE = parseInt(btn.dataset.secs);
+    });
+  });
+
+  // Start
+  document.getElementById('startBtn').addEventListener('click', () => {
+    splash.classList.add('fade-out');
+    setTimeout(() => {
+      splash.style.display = 'none';
+      app.classList.add('active');
+      editor.focus();
+      initTimer(); startSession(); started = true;
+    }, 800);
+  });
+
+  function initTimer() {
+    timeLeft = GRACE;
+    timerArc.style.strokeDasharray  = CIRC;
+    timerArc.style.strokeDashoffset = 0;
+    updateTimerDisplay();
+  }
+
+  function startSession() {
+    sessionSeconds = 0;
+    clearInterval(sessionInterval);
+    sessionInterval = setInterval(() => {
+      sessionSeconds++;
+      const m = Math.floor(sessionSeconds / 60), s = sessionSeconds % 60;
+      sessionTime.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }, 1000);
+  }
+
+  editor.addEventListener('input', () => {
+    if (!started || dying) return;
+    timeLeft = GRACE;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(tick, 100);
+    const text = editor.value;
+    wordCount.textContent = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+    charCount.textContent = text.length;
+    setDanger(0);
+  });
+
+  editor.addEventListener('keydown', () => {
+    if (started && !timerInterval) timerInterval = setInterval(tick, 100);
+  });
+
+  function tick() {
+    timeLeft = Math.max(0, timeLeft - 0.1);
+    updateTimerDisplay();
+    setDanger(1 - timeLeft / GRACE);
+    if (timeLeft <= 0) { clearInterval(timerInterval); timerInterval = null; triggerDelete(); }
+  }
+
+  function updateTimerDisplay() {
+    const ratio = timeLeft / GRACE;
+    timerArc.style.strokeDashoffset = CIRC * (1 - ratio);
+    timerNum.textContent = Math.ceil(timeLeft);
+    const col = ratio > 0.5 ? '#3a8c5c' : ratio > 0.25 ? '#cc7700' : '#cc2200';
+    timerArc.style.stroke = col;
+    timerNum.style.color  = col;
+    progressBar.style.width      = (ratio * 100) + '%';
+    progressBar.style.background = col;
+  }
+
+  function setDanger(t) {
+    vignette.style.opacity = t * 0.7;
+    vignette.style.background = `radial-gradient(ellipse at center, transparent ${40 - t*30}%, rgba(160,0,0,${t*0.55}) 100%)`;
+    document.body.style.background = t > 0.5
+      ? `rgb(${Math.round(13+t*20)},${Math.round(13-t*8)},${Math.round(13-t*8)})`
+      : '#0d0d0d';
+  }
+
+  function triggerDelete() {
+    if (dying) return; dying = true;
+    const flash = document.getElementById('flash');
+    flash.style.cssText = 'position:fixed;inset:0;z-index:40;pointer-events:none;animation:screen-flash 0.6s ease forwards';
+    editor.classList.add('deleted');
+    burnOverlay.style.opacity = '1';
+    document.getElementById('burnText').style.animation = 'burnIn 1.4s ease forwards';
+    setTimeout(() => {
+      editor.value = '';
+      editor.classList.remove('deleted');
+      wordCount.textContent = '0'; charCount.textContent = '0';
+      burnOverlay.style.opacity = '0';
+      document.getElementById('burnText').style.animation = 'none';
+      setDanger(0); document.body.style.background = '#0d0d0d';
+      dying = false; initTimer();
+    }, 1400);
+  }
+
+  // Ctrl+S or Ctrl+Enter to end session
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      if (started && editor.value.trim().length > 0) endSession();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (started && editor.value.trim().length > 0) endSession();
+    }
+  });
+
+  function endSession() {
+    clearInterval(timerInterval); clearInterval(sessionInterval);
+    timerInterval = null; dying = false;
+    savedText = editor.value;
+    const words = savedText.trim().split(/\s+/).filter(Boolean).length;
+    const m = Math.floor(sessionSeconds / 60), s = sessionSeconds % 60;
+    document.getElementById('modalStats').innerHTML =
+      `<strong>${words}</strong> words &nbsp;·&nbsp; <strong>${savedText.length}</strong> chars &nbsp;·&nbsp; <strong>${m}:${s.toString().padStart(2,'0')}</strong> writing time`;
+    document.getElementById('modalContent').textContent = savedText;
+    document.getElementById('saveStatus').textContent = '';
+    document.getElementById('saveBtn').textContent = 'Save session';
+    document.getElementById('saveBtn').disabled = false;
+    savedModal.classList.add('open');
+    setDanger(0); document.body.style.background = '#0d0d0d';
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(savedText);
+    document.getElementById('copyBtn').textContent = 'Copied!';
+    setTimeout(() => document.getElementById('copyBtn').textContent = 'Copy text', 2000);
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveBtn');
+    const status = document.getElementById('saveStatus');
+    btn.textContent = 'Saving…'; btn.disabled = true;
+    const words = savedText.trim().split(/\s+/).filter(Boolean).length;
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: savedText,
+          word_count: words,
+          char_count: savedText.length,
+          duration_seconds: sessionSeconds,
+          grace_period: GRACE
+        })
+      });
+      const data = await res.json();
+      btn.textContent = 'Saved ✓';
+      status.innerHTML = '✓ saved — <a href="/sessions" style="color:#ff6b2b;text-decoration:none">view all sessions →</a>';
+    } catch(err) {
+      btn.textContent = 'Save session';
+      btn.disabled = false;
+      status.textContent = 'Failed to save. Try again.';
+      status.style.color = '#cc2200';
+    }
+  });
+
+  document.getElementById('newSessionBtn').addEventListener('click', () => {
+    savedModal.classList.remove('open');
+    editor.value = '';
+    wordCount.textContent = '0'; charCount.textContent = '0';
+    initTimer(); startSession();
+    timerInterval = null; started = true;
+    editor.focus();
+  });
+</script>
+</body>
+</html>

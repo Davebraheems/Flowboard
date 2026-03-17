@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FlowBoard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;
+  --surface:#13131a;
+  --border:#1e1e2e;
+  --text:#e2e2f0;
+  --muted:#6b6b8a;
+  --accent:#7c6af7;
+  --accent2:#f59e0b;
+}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh}
+
+header{
+  padding:24px 48px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.logo{font-size:1.4rem;font-weight:800;letter-spacing:-0.03em}
+.logo span{color:var(--accent)}
+
+.hero{padding:80px 48px 40px;max-width:900px}
+.hero-label{font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--accent);letter-spacing:0.12em;margin-bottom:18px;opacity:0.8}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;line-height:1.0;letter-spacing:-0.04em;margin-bottom:16px}
+.hero h1 em{color:var(--accent);font-style:normal}
+.hero p{color:var(--muted);font-size:1rem;max-width:420px;line-height:1.6;font-weight:400}
+
+.boards-section{padding:0 48px 80px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.section-title{font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+
+.boards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+
+.board-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:24px;
+  text-decoration:none;
+  color:var(--text);
+  display:block;
+  transition:border-color 0.2s,transform 0.2s;
+  position:relative;
+  overflow:hidden;
+}
+.board-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--accent);opacity:0;transition:opacity 0.2s;
+}
+.board-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.board-card:hover::before{opacity:1}
+
+.board-icon{
+  width:44px;height:44px;border-radius:12px;
+  background:rgba(124,106,247,0.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;margin-bottom:16px;
+}
+.board-name{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.board-meta{font-size:0.78rem;color:var(--muted);font-family:'Fira Code',monospace}
+.board-delete{
+  position:absolute;top:14px;right:14px;
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  opacity:0;font-size:1rem;transition:opacity 0.2s,color 0.2s;
+  padding:4px 8px;border-radius:6px;
+}
+.board-card:hover .board-delete{opacity:1}
+.board-delete:hover{color:#ef4444;background:rgba(239,68,68,0.1)}
+
+.new-board-btn{
+  display:flex;align-items:center;gap:10px;
+  background:none;border:1.5px dashed var(--border);
+  border-radius:16px;padding:24px;
+  color:var(--muted);cursor:pointer;font-family:'Syne',sans-serif;
+  font-size:0.9rem;font-weight:600;
+  transition:border-color 0.2s,color 0.2s;
+  width:100%;
+}
+.new-board-btn:hover{border-color:var(--accent);color:var(--accent)}
+.plus{
+  width:32px;height:32px;border-radius:8px;
+  background:rgba(124,106,247,0.12);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;color:var(--accent);
+}
+
+/* Modal */
+.modal-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.7);
+  align-items:center;justify-content:center;
+  z-index:1000;backdrop-filter:blur(4px);
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:36px;width:360px;
+}
+.modal h3{font-size:1.2rem;font-weight:700;margin-bottom:20px}
+.modal input{
+  width:100%;padding:12px 16px;
+  background:#0a0a0f;border:1px solid var(--border);
+  border-radius:10px;color:var(--text);
+  font-family:'Syne',sans-serif;font-size:0.95rem;
+  outline:none;margin-bottom:16px;
+}
+.modal input:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.btn{padding:10px 20px;border-radius:10px;font-family:'Syne',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;border:none;transition:all 0.18s}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{background:#6a58f5}
+.btn-ghost{background:none;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Flow<span>Board</span></div>
+  <span style="font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--muted)">v1.0</span>
+</header>
+
+<div class="hero">
+  <div class="hero-label">// task management</div>
+  <h1>Organize work.<br><em>Ship faster.</em></h1>
+  <p>A Kanban board for developers and teams who value clarity over clutter.</p>
+</div>
+
+<div class="boards-section">
+  <div class="section-header">
+    <span class="section-title">Your Boards</span>
+  </div>
+
+  <div class="boards-grid">
+    {% for b in boards %}
+    <a href="/board/{{ b.id }}" class="board-card">
+      <button class="board-delete" onclick="deleteBoard(event, {{ b.id }})">✕</button>
+      <div class="board-icon">📋</div>
+      <div class="board-name">{{ b.name }}</div>
+      <div class="board-meta">Created {{ b.created_at[:10] }}</div>
+    </a>
+    {% endfor %}
+
+    <button class="new-board-btn" onclick="document.getElementById('newModal').classList.add('open')">
+      <span class="plus">+</span>
+      Create new board
+    </button>
+  </div>
+</div>
+
+<!-- New Board Modal -->
+<div class="modal-bg" id="newModal">
+  <div class="modal">
+    <h3>New Board</h3>
+    <input type="text" id="boardName" placeholder="e.g. Q2 Sprint, Side Project…" autofocus>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('newModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="createBoard()">Create Board</button>
+    </div>
+  </div>
+</div>
+
+<script>
+async function createBoard() {
+  const name = document.getElementById('boardName').value.trim();
+  if (!name) return;
+  const res = await fetch('/api/boards', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  const d = await res.json();
+  window.location.href = '/board/' + d.id;
+}
+
+async function deleteBoard(e, id) {
+  e.preventDefault();
+  if (!confirm('Delete this board and all its cards?')) return;
+  await fetch('/api/boards/' + id, {method:'DELETE'});
+  location.reload();
+}
+
+document.getElementById('boardName').addEventListener('keydown', e => { if(e.key==='Enter') createBoard(); });
+document.getElementById('newModal').addEventListener('click', e => { if(e.target===e.currentTarget) e.currentTarget.classList.remove('open'); });
+</script>
+</body>
+</html>
