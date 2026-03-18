@@ -6,7 +6,6 @@
 <title>FlowBoard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -126,7 +125,10 @@ header{
 
 <header>
   <div class="logo">Flow<span>Board</span></div>
-  <span style="font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--muted)">v1.0</span>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span style="font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--muted)">{{ username }}</span>
+    <a href="/logout" style="font-family:'Fira Code',monospace;font-size:0.72rem;color:var(--muted);text-decoration:none;padding:6px 12px;border:1px solid var(--border);border-radius:6px;transition:all 0.2s" onmouseover="this.style.color='#e2e2f0'" onmouseout="this.style.color='#6b6b8a'">logout</a>
+  </div>
 </header>
 
 <div class="hero">

@@ -6,7 +6,6 @@
 <title>{{ board.name }} — FlowBoard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -205,8 +204,11 @@ header{
   <span class="sep">/</span>
   <span class="board-title" id="boardTitle">{{ board.name }}</span>
   <div class="header-actions">
+    <span style="font-family:'Fira Code',monospace;font-size:0.72rem;color:var(--muted)">{{ username }}</span>
+    <a href="/" style="color:var(--muted);text-decoration:none;font-size:0.78rem;padding:7px 14px;border:1px solid var(--border2);border-radius:8px;transition:all 0.18s" class="hbtn hbtn-ghost">← Boards</a>
     <button class="hbtn hbtn-ghost" onclick="showColModal()">+ Add Column</button>
     <button class="hbtn hbtn-accent" onclick="showCardModal(null)">+ Add Card</button>
+    <a href="/logout" style="padding:7px 14px;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:600;color:var(--muted);border:1px solid var(--border2);text-decoration:none;transition:all 0.18s">Logout</a>
   </div>
 </header>
 
