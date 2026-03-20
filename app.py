@@ -272,6 +272,11 @@ def write():
 @login_required
 def sessions_page():
     rows = turso_execute("SELECT * FROM writing_sessions WHERE user_id=? ORDER BY created_at DESC", (session["user_id"],))
+    for r in rows:
+        r["word_count"]       = int(r.get("word_count") or 0)
+        r["char_count"]       = int(r.get("char_count") or 0)
+        r["duration_seconds"] = int(r.get("duration_seconds") or 0)
+        r["grace_period"]     = int(r.get("grace_period") or 5)
     return render_template("sessions.html", sessions=rows, username=session.get("username"))
 
 @app.route("/sessions/<int:session_id>")
@@ -280,6 +285,10 @@ def session_detail(session_id):
     s = turso_one("SELECT * FROM writing_sessions WHERE id=? AND user_id=?", (session_id, session["user_id"]))
     if not s:
         return redirect(url_for("sessions_page"))
+    s["word_count"]       = int(s.get("word_count") or 0)
+    s["char_count"]       = int(s.get("char_count") or 0)
+    s["duration_seconds"] = int(s.get("duration_seconds") or 0)
+    s["grace_period"]     = int(s.get("grace_period") or 5)
     return render_template("session_detail.html", session=s, username=session.get("username"))
 
 @app.route("/api/sessions", methods=["POST"])

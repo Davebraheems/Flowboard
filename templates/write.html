@@ -6,7 +6,6 @@
 <title>Write or Die</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✍️</text></svg>">
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -117,6 +116,7 @@
       <div class="stat">chars <span id="charCount">0</span></div>
       <div class="stat">time <span id="sessionTime">0:00</span></div>
     </div>
+    <button id="topSaveBtn" onclick="if(started && editor.value.trim().length > 0) endSession()" style="padding:8px 16px;background:var(--safe);border:none;border-radius:3px;color:white;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:500;cursor:pointer;letter-spacing:0.06em;transition:background 0.2s;display:none">Save</button>
   </div>
   <div class="editor-wrap">
     <textarea id="editor" placeholder="Start typing… don't you dare stop."></textarea>
@@ -206,6 +206,9 @@
     wordCount.textContent = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
     charCount.textContent = text.length;
     setDanger(0);
+    // show save button once user has written something
+    if (text.trim().length > 0) document.getElementById('topSaveBtn').style.display = 'block';
+    else document.getElementById('topSaveBtn').style.display = 'none';
   });
 
   editor.addEventListener('keydown', () => {
