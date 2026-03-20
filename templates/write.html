@@ -295,6 +295,8 @@
   document.getElementById('saveBtn').addEventListener('click', async () => {
     const btn = document.getElementById('saveBtn');
     const status = document.getElementById('saveStatus');
+
+    {% if username %}
     btn.textContent = 'Saving…'; btn.disabled = true;
     const words = savedText.trim().split(/\s+/).filter(Boolean).length;
     try {
@@ -318,6 +320,9 @@
       status.textContent = 'Failed to save. Try again.';
       status.style.color = '#cc2200';
     }
+    {% else %}
+    status.innerHTML = 'You need an account to save. <a href="/signup" style="color:#ff6b2b;text-decoration:none">Sign up free →</a> or <a href="/login" style="color:#ff6b2b;text-decoration:none">log in →</a>';
+    {% endif %}
   });
 
   document.getElementById('newSessionBtn').addEventListener('click', () => {

@@ -264,7 +264,6 @@ def move_card():
 
 # ── Write or Die ──────────────────────────────────────────
 @app.route("/write")
-@login_required
 def write():
     return render_template("write.html", username=session.get("username"))
 
